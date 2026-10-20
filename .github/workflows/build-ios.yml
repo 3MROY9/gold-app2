@@ -1,0 +1,42 @@
+name: Build iOS (GoldOrderBook)
+
+# هذا الملف يبني التطبيق على خادم macOS مجاني من GitHub
+# النتيجة: ملف GoldOrderBook.ipa جاهز للتثبيت على الايفون
+
+on:
+  workflow_dispatch:      # يتيح تشغيله يدوياً من موقع GitHub
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - name: تحميل الكود
+        uses: actions/checkout@v4
+
+      - name: عرض البناءات المتوفرة
+        run: xcodebuild -list
+
+      - name: بناء التطبيق بدون توقيع (Unsigned)
+        run: |
+          xcodebuild \
+            -scheme GoldOrderBook \
+            -destination "generic/platform=iOS" \
+            -configuration Release \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: تجهيز ملف IPA
+        run: |
+          mkdir -p Payload
+          cp -r "build/Build/Products/Release-iphoneos/GoldOrderBook.app" Payload/
+          zip -r GoldOrderBook.ipa Payload
+
+      - name: رفع ملف IPA للتنزيل
+        uses: actions/upload-artifact@v4
+        with:
+          name: GoldOrderBook-ipa
+          path: GoldOrderBook.ipa
